@@ -55,6 +55,7 @@ struct http_response
     long status;       /* final HTTP status code (after redirects)    */
     long long size_total;  /* whole-resource size, -1 if unknown      */
     long filetime;     /* last-modified time (unix), -1 if unavailable */
+    char errstr[256];  /* transport error text (curl), "" when none   */
 };
 
 /* ------------------------------------------------------------------

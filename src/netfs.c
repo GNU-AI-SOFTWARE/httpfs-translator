@@ -944,31 +944,45 @@ error_t netfs_validate_stat (struct node *np, struct iouser *cred)
     else
     {
         int err = ensure_metadata (nn->parent);
-        if (err != 0)
-            return err;
-
         mode = S_IFREG | 0444;
 
         switch (nn->kind)
         {
         case HTTPFS_CONTENT:
+            if (err != 0)
+                return err;
             size = resource_size (nn->parent);
             if (size < 0)
                 size = 0;
             break;
 
         case HTTPFS_HEADERS:
-            size = nn->parent->probe.headers != nullptr
-                   ? (long long) strlen (nn->parent->probe.headers) : 0;
+            if (err != 0)
+              {
+                /* No header block on transport error: expose the
+                   curl reason instead of failing the stat. */
+                char tmp[300];
+                int n = snprintf (tmp, sizeof tmp, "httpfs-error: %s\n",
+                                  nn->parent->probe.errstr);
+                size = n > 0 ? n : 0;
+              }
+            else
+                size = nn->parent->probe.headers != nullptr
+                       ? (long long) strlen (nn->parent->probe.headers) : 0;
             break;
 
         case HTTPFS_STATUS:
-            {
+            /* "000" is the HTTP convention for "no response": the
+               status view stays readable even when the probe failed. */
+            if (err != 0)
+                size = 4;               /* "000\n" */
+            else
+              {
                 char tmp[24];
                 int n = snprintf (tmp, sizeof tmp, "%ld\n",
                                   nn->parent->probe.status);
                 size = n > 0 ? n : 0;
-            }
+              }
             break;
 
         default:
@@ -1068,24 +1082,34 @@ error_t netfs_attempt_read (struct iouser *cred, struct node *np,
     /* The headers and status views come from the probe: no
        document download is ever needed. */
     err = ensure_metadata (own);
-    if (err != 0)
-        return err;
 
     const char *bytes;
     size_t n_bytes;
-    char tmp[24];
+    char tmp[300];
 
     if (nn->kind == HTTPFS_HEADERS)
-    {
-        bytes = own->probe.headers != nullptr ? own->probe.headers : "";
-        n_bytes = strlen (bytes);
-    }
+      {
+        if (err != 0)
+          {
+            int n = snprintf (tmp, sizeof tmp, "httpfs-error: %s\n",
+                              own->probe.errstr);
+            bytes = tmp;
+            n_bytes = (size_t) (n > 0 ? n : 0);
+          }
+        else
+          {
+            bytes = own->probe.headers != nullptr ? own->probe.headers : "";
+            n_bytes = strlen (bytes);
+          }
+      }
     else
-    {
-        int n = snprintf (tmp, sizeof tmp, "%ld\n", own->probe.status);
+      {
+        /* STATUS: "000" when the probe failed (transport error). */
+        int n = snprintf (tmp, sizeof tmp, "%ld\n",
+                          err != 0 ? 0 : own->probe.status);
         bytes = tmp;
         n_bytes = (size_t) (n > 0 ? n : 0);
-    }
+      }
 
     if (offset < 0 || (uint64_t) offset >= (uint64_t) n_bytes)
     {

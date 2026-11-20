@@ -239,6 +239,7 @@ static int http_get_impl (enum http_mode mode, const char *url,
         return EINVAL;
 
     http_response_release (out);
+    out->errstr[0] = '\0';
 
     curl = curl_easy_init ();
     if (curl == nullptr)
@@ -293,6 +294,10 @@ static int http_get_impl (enum http_mode mode, const char *url,
         case CURLE_RANGE_ERROR:         err = ERANGE;      break;
         default:                        err = EIO;         break;
         }
+        /* Keep the precise libcurl reason: the caller surfaces it in
+           the "headers" view when the probe fails. */
+        snprintf (out->errstr, sizeof out->errstr, "%s",
+                  curl_easy_strerror (rc));
         goto leave;
     }
 
@@ -344,6 +349,7 @@ void http_response_release (struct http_response *r)
     r->status = 0;
     r->size_total = -1;
     r->filetime = -1;
+    r->errstr[0] = '\0';
 }
 
 int http_head (const char *url, struct http_response *out)
