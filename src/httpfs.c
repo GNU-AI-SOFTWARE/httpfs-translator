@@ -70,7 +70,7 @@ int main (int argc, char *argv[])
        settrans hands its arguments to the translator; the first
        argument that is not an option is our URL. */
     for (int i = 1; i < argc; i++)
-        if (argv[i][0] != '-')
+        if (argv[i][0] != '-' && argv[i][0] != '\0')
         {
             base_url = argv[i];
             break;
@@ -78,6 +78,11 @@ int main (int argc, char *argv[])
 
     if (base_url == nullptr)
         error (1, 0, "usage: settrans -a <mount point> httpfs <URL>");
+
+    if (strncmp (base_url, "http://", 7) != 0
+        && strncmp (base_url, "https://", 8) != 0)
+        error (1, 0, "httpfs: the base URL must start with http:// or "
+              "https:// (got \"%s\")", base_url);
 
     /* --- Initialize libnetfs ------------------------------------ */
     netfs_init ();
