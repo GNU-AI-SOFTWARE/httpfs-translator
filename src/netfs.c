@@ -800,6 +800,17 @@ error_t netfs_attempt_lookup (struct iouser *user, struct node *dir,
     {
         struct node *parent = dn->parent != nullptr ? dn->parent->node : dir;
 
+        if (parent == dir)
+          {
+            /* ".." at the root is the root itself.  dir->lock is
+               already held and must STAY held (the contract returns
+               *np locked): re-locking it would self-deadlock on a
+               default mutex. */
+            netfs_nref (dir);
+            *np = dir;
+            return 0;
+          }
+
         pthread_mutex_lock (&parent->lock);
         netfs_nref (parent);
         *np = parent;
