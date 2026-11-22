@@ -399,7 +399,10 @@ http_probe (const char *url, struct http_response *out)
     if (err == 0 && out->status != 403 && out->status != 405
         && out->status != 501)
         return err;
+    /* http_get_impl releases *out at entry: the alternate response must
+       start zeroed, never as a wild struct (double free). */
     struct http_response alt;
+    memset (&alt, 0, sizeof alt);
     int e2 = http_get_impl (HTTP_MODE_META, url, 0, 0, &alt);
     if (e2 == 0 && alt.status >= 200 && alt.status < 400)
       {
