@@ -3,9 +3,23 @@
 Keep a Changelog format, semantic versioning. Frozen contracts never change
 silently: every evolution goes through a `version` bump.
 
-## [1.0.0] — 2026-11-22
+## [0.1.0] — 2026-11-22
 
 ## [Unreleased]
+
+### Modifié
+
+- **Reset de version à 0.1.0** : la v1.0.0 avait été coupée par le tail d'un
+  bootstrap raté (avant le merge des PRs de versioning). `VERSION` repasse à
+  0.1.0, la section `## [1.0.0]` devient `## [0.1.0]` et le tag `v1.0.0` est
+  supprimé ; le versionnage itératif repart de 0.1.0 → 0.1.1 → …
+
+### Ajouté
+
+- **Versionnage itératif** : `scripts/release.sh iterate` (bump patch auto à
+  chaque itération : 0.1.0 → 0.1.1 → 0.1.2 …, `--all` pour toute la pile),
+  helper `scripts/version.sh` (`--next`, `--check`), doc `docs/VERSIONING.md`
+  (section « Versionnage itératif »).
 
 ### Fixed
 
