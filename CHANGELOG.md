@@ -3,6 +3,8 @@
 Keep a Changelog format, semantic versioning. Frozen contracts never change
 silently: every evolution goes through a `version` bump.
 
+## [0.1.1] — 2026-11-22
+
 ## [0.1.0] — 2026-11-22
 
 ## [Unreleased]
