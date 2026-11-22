@@ -23,6 +23,7 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -158,7 +159,9 @@ static const char *header_value (const char *headers, const char *name)
 }
 
 /* parse_ll — parse a decimal long long, stopping at the first
-   character that is not a digit.  Returns true on success. */
+   character that is not a digit.  Returns false when the digits do
+   not fit in a long long: the multiply must never overflow (a header
+   value is attacker-controlled input). */
 static bool parse_ll (const char *s, long long *out)
 {
     if (s == nullptr)
@@ -167,7 +170,11 @@ static bool parse_ll (const char *s, long long *out)
     long long v = 0;
     while (*s >= '0' && *s <= '9')
     {
-        v = v * 10 + (*s - '0');
+        int d = *s - '0';
+
+        if (v > (LLONG_MAX - d) / 10)
+            return false;       /* out of range: refuse, no overflow */
+        v = v * 10 + d;
         s++;
     }
     *out = v;
@@ -188,9 +195,19 @@ static long long size_total_of (const struct http_buf *headers,
                                 size_t body_len)
 {
     /* The header buffer is one byte longer than headers->len because
-       http_get_impl appends the terminating NUL. */
+       http_get_impl appends the terminating NUL.  With redirects
+       (FOLLOWLOCATION) the buffer holds one block per hop: only the
+       LAST response describes the body we kept, so the search starts
+       at the last status line, never at the first hop's. */
     const char *hdrs = headers->data != nullptr ? headers->data : "";
-    const char *cr = header_value (hdrs, "Content-Range");
+    const char *last = hdrs;
+
+    for (const char *p = strstr (hdrs, "HTTP/"); p != nullptr;
+         p = strstr (p + 1, "HTTP/"))
+        if (p == hdrs || p[-1] == '\n')
+            last = p;
+
+    const char *cr = header_value (last, "Content-Range");
     long long v;
 
     if (cr != nullptr)
@@ -203,7 +220,7 @@ static long long size_total_of (const struct http_buf *headers,
         return -1;
     }
 
-    const char *cl = header_value (hdrs, "Content-Length");
+    const char *cl = header_value (last, "Content-Length");
     if (cl != nullptr && parse_ll (cl, &v) && v >= 0)
         return v;
 
