@@ -245,7 +245,26 @@ static int fetch_block (struct netnode *nn, uint64_t idx,
 
     /* The window of block IDX: [idx*BS, min(size, (idx+1)*BS)).
        When the total size is unknown, ask for a full block and let
-       a short answer mark the end of the resource. */
+       a short answer mark the end of the resource.  A seek near the
+       top of the address space would make idx*BS wrap: treat that as
+       beyond the resource (empty block = EOF), never as block 0. */
+    if (idx > (UINT64_MAX - HTTPFS_BLOCK_SIZE) / HTTPFS_BLOCK_SIZE)
+      {
+        int e;
+
+        b = malloc (sizeof *b);
+        if (b == nullptr)
+            return ENOMEM;
+        b->idx = idx;
+        b->len = 0;
+        b->data = nullptr;
+        b->older = b->newer = nullptr;
+        e = install_block (nn, b);
+        if (e != 0)
+            return e;
+        *blk = b;
+        return 0;
+      }
     size_t start = (size_t) (idx * HTTPFS_BLOCK_SIZE);
     size_t end = start + HTTPFS_BLOCK_SIZE - 1;
     if (nn->size >= 0 && (long long) end >= nn->size)
