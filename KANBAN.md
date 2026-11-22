@@ -13,6 +13,12 @@ Derived from [`PLAN.md`](PLAN.md). Cards follow the phases of the
 plan; the checked state mirrors PLAN.md and the repository state.
 
 ## To do
+### Phase 5: Production Cluster & Performance
+- [ ] Multi-node cluster (2–5 nodes): concurrent multi-user fetches, one seek/Range cursor per open file per reader
+- [ ] Locking audit + fault injection (libmicrohttpd v2), no user-serialized global state
+- [ ] Zero-copy Mach IPC between `httpfs` and stacked parsers (measured via SHA-256 endpoints)
+- [ ] Range cache with ETag/Last-Modified coherence, bounded memory
+
 
 ### Phase 1: Foundation & Deterministic Testing Environment
 - [ ] Write the core C test suite using **`libmicrohttpd` v1** to simulate a loopback (`127.0.0.1`) embedded HTTP server
