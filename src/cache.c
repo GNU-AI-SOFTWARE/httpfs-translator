@@ -171,7 +171,7 @@ memerr:
  * find_child — return the live child of DN named NAME, or NULL.
    DN's child_lock must NOT be held; it is taken here.
  */
-struct netnode find_child (struct netnode *dn, const char *name)
+struct netnode *find_child (struct netnode *dn, const char *name)
 {
     struct netnode *cn;
 
