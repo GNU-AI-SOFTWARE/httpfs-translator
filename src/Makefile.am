@@ -11,6 +11,10 @@ httpfs_SOURCES = \
     httpfs.c \
     httpfs.h \
     netfs.c \
+    netfs_internal.h \
+    util.c \
+    blocks.c \
+    cache.c \
     options.c \
     options.h
 
