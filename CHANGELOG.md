@@ -7,6 +7,13 @@ silently: every evolution goes through a `version` bump.
 
 ## [Unreleased]
 
+### Ajouté
+
+- **Versionnage itératif** : `scripts/release.sh iterate` (bump patch auto à
+  chaque itération : 0.1.0 → 0.1.1 → 0.1.2 …, `--all` pour toute la pile),
+  helper `scripts/version.sh` (`--next`, `--check`), doc `docs/VERSIONING.md`
+  (section « Versionnage itératif »).
+
 ### Fixed
 
 - **`src/http.c` — `parse_ll` signed-overflow UB**: a digit run longer than
