@@ -228,6 +228,10 @@ src/
   httpfs.c                entry point: argument parsing, netfs startup
   httpfs.h                node model: struct netnode, view kinds
   netfs.c                 libnetfs callbacks: lookup, stat, dirents, read
+  netfs_internal.h        internals shared by the netfs modules below
+  util.c                  inode derivation (FNV-1a) and reserved-name helpers
+  blocks.c                resource engine: HEAD probe, 64 KiB block cache, ranged reads
+  cache.c                 child lists and the global MRU node cache
   doc.c / doc.h           portable document tree (the parser output model)
   json.c / json.h         JSON parser (RFC 8259, bounded)
   html.c / html.h         tolerant HTML extractor (title, text, meta, links)
@@ -259,7 +263,7 @@ client process
     ▼
 GNU Mach IPC → libnetfs (locking, peropens, RPC dispatch)
     ▼
-httpfs callbacks (src/netfs.c)
+httpfs callbacks (src/netfs.c) — engine: src/blocks.c, cache: src/cache.c, utils: src/util.c
     │  ensure_resource(): one GET per node
     ▼
 transport layer (src/http.c) → libcurl → remote HTTP server

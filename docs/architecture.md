@@ -14,7 +14,7 @@ client process
 GNU Mach IPC ─► libnetfs (threads, peropens, node locks, RPC dispatch)
                    │
                    ▼
-        httpfs callbacks (src/netfs.c)
+        httpfs callbacks (src/netfs.c) — engine src/blocks.c, cache src/cache.c, utils src/util.c
                    │  ensure_resource(): one GET per directory node
                    ▼
         transport layer (src/http.c) ─► libcurl ─► remote HTTP server
@@ -28,7 +28,11 @@ GNU Mach IPC ─► libnetfs (threads, peropens, node locks, RPC dispatch)
 |-----------------|-----------------|----------------|
 | `src/http.c/h`  | none            | Turn a URL into raw bytes: one GET, redirect following, transfer-encoding decode, timeouts, error translation, URL joining with RFC 3986 percent-encoding |
 | `src/httpfs.h`  | libnetfs, libihash, libcurl | The node model: `struct netnode`, view kinds, prototypes of `httpfs_init` / `httpfs_destroy` |
-| `src/netfs.c`   | libnetfs, libihash | All libnetfs callbacks; node life cycle; the three views; directory listings |
+| `src/netfs.c`   | libnetfs, libihash | All libnetfs callbacks; the three views; directory listings; node life cycle entry points |
+| `src/util.c`    | none (node model only) | Inode derivation (`fnv1a`, `ino_of`) and reserved-name helpers (`reserved_name`) |
+| `src/blocks.c`  | libcurl via `src/http.h` | Resource engine: HEAD probe (`ensure_metadata`), 64 KiB block fetch (`fetch_block`), ranged reads (`read_blocks`), `release_resource`, `resource_size` |
+| `src/cache.c`   | libnetfs, libihash | Child lists (`create_child`, `find_child`, `unlink_child`) and the global MRU node cache (`cache_node`) |
+| `src/netfs_internal.h` | — | Internals shared by the netfs modules |
 | `src/httpfs.c`  | libnetfs | `main()`: argument parsing, root node creation, `netfs_startup`, service loop |
 
 The transport layer is deliberately free of Hurd headers, so it is
@@ -140,7 +144,7 @@ reference that libnetfs keeps on the directory being looked through
 additionally guarantees that the eviction cascade can never free
 that directory.
 
-### 5.1 The node cache (Phase 2)
+### 5.1 The node cache (`src/cache.c`, Phase 2)
 
 Every child created by a lookup is entered in its parent's child
 list *and* in a global MRU cache of `HTTPFS_NODE_CACHE_MAX` (64)
@@ -160,7 +164,7 @@ sequence:
   releases the parent pin; the cascade can walk up the chain
   without ever locking the directory currently being traversed.
 
-### 5.2 The resource engine (Phase 2)
+### 5.2 The resource engine (`src/blocks.c`, Phase 2)
 
 A directory's resource is a small state machine
 (`enum httpfs_res_state`, see httpfs.h):
