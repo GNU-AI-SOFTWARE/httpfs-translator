@@ -24,6 +24,13 @@
 - [ ] Multi-task and multi-user operation: `httpfs` and the parser chain (`htmlfs`, `jsonfs`, `csvfs`/`tsvfs`) must serve concurrent readers and several users at once — one seek/Range cursor per open file per reader, no shared mutable state without locking, no user-serialized global state.
 - [ ] Optimize Mach IPC and minimize buffer-copy overhead (memory-to-memory I/O) between `httpfs` and upstream content translators.
 
+## Phase 5: Production Cluster & Performance
+- [ ] Complete the cluster item from Phase 3: `httpfs` and the parser chain serve concurrent multi-user fetches on a multi-node Hurd cluster (2–5 nodes) — one seek/Range cursor per open file per reader, and stacking behaviour (`httpfs` under `htmlfs`/`jsonfs`/`csvfs`) independent of single-node topology.
+- [ ] Production-level multi-task/multi-user hardening from Phase 4: locking audit, no user-serialized global state, fault-injection scenarios with libmicrohttpd v2.
+- [ ] Optimize Mach IPC between `httpfs` and the stacked parser translators (zero-copy where possible), measured with the Phase 1 post-read SHA-256 endpoints.
+- [ ] Range cache with coherence (ETag/Last-Modified revalidation), bounded memory.
+- [ ] Acceptance: concurrent readers on 2+ nodes get byte-identical content (SHA-256), no cursor cross-talk between readers, no regression in the Phase 2 raw-transport suite.
+
 ## Design Notes
 
 - **Cluster from phase 3**: as of orchestrator phase 3, the stack runs on multi-node Hurd clusters. `httpfs` itself needs no new contract — a translator mounted on the orchestrator node serves fetches for the remote instances too. The design rule is that neither the transport nor the parser chain may assume a single-node topology: one seek/Range cursor per open file per reader, no shared mutable state without locking.
