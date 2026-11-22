@@ -18,3 +18,11 @@ silently: every evolution goes through a `version` bump.
 - **`src/netfs.c` — `fetch_block` index wraparound**: a seek near the top of
   the 64-bit address space made `idx * HTTPFS_BLOCK_SIZE` wrap and serve
   block 0 at a huge offset; it now returns an empty block (EOF).
+- **Probe HEAD with GET fallback (`http_probe`)**: signed CDN URLs behind
+  `huggingface.co/.../resolve/` (Xet bridge `cas-bridge.xethub.hf.co`) can
+  refuse HEAD (403/405) or lose it on a redirect hop, which left
+  `/page/status` unreadable forever. `ensure_metadata` now calls
+  `http_probe`: HEAD first, then on transport failure or a 403/405/501
+  answer a 1-byte ranged GET capped to 1 MB of body (`HTTP_MODE_META`;
+  `CURLE_FILESIZE_EXCEEDED` in that mode publishes the headers instead of
+  failing).

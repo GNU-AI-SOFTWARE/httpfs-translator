@@ -49,6 +49,7 @@ enum http_mode
     HTTP_MODE_GET,      /* plain GET, no Range header                */
     HTTP_MODE_HEAD,     /* HEAD: metadata only                        */
     HTTP_MODE_RANGE,    /* GET with a "Range: bytes=start-end" header */
+    HTTP_MODE_META,     /* GET Range 0-0, body capped: probe fallback */
 };
 
 /* ------------------------------------------------------------------
@@ -295,6 +296,14 @@ static int http_get_impl (enum http_mode mode, const char *url,
         }
         curl_easy_setopt (curl, CURLOPT_RANGE, range);
     }
+    else if (mode == HTTP_MODE_META)
+      {
+        /* Probe fallback: a 1-byte ranged GET, with the body capped so
+           a server ignoring Range cannot make us buffer the resource. */
+        curl_easy_setopt (curl, CURLOPT_RANGE, "0-0");
+        curl_easy_setopt (curl, CURLOPT_MAXFILESIZE_LARGE,
+                         (curl_off_t) (1 << 20));
+      }
 
     /* --- Transfer ----------------------------------------------- */
     rc = curl_easy_perform (curl);
@@ -308,6 +317,15 @@ static int http_get_impl (enum http_mode mode, const char *url,
         case CURLE_COULDNT_RESOLVE_HOST:
         case CURLE_COULDNT_CONNECT:     err = EHOSTUNREACH; break;
         case CURLE_RANGE_ERROR:         err = ERANGE;      break;
+        case CURLE_FILESIZE_EXCEEDED:
+            /* Only HTTP_MODE_META caps the body: reaching the cap means
+               the headers are complete and only the body was too big —
+               publish the metadata. */
+            if (mode == HTTP_MODE_META)
+                rc = CURLE_OK;
+            else
+                err = EIO;
+            break;
         default:                        err = EIO;         break;
         }
         goto leave;
@@ -366,6 +384,31 @@ void http_response_release (struct http_response *r)
 int http_head (const char *url, struct http_response *out)
 {
     return http_get_impl (HTTP_MODE_HEAD, url, 0, 0, out);
+}
+
+/* http_probe — metadata probe with a GET fallback.  Some servers (the
+ * Hugging Face Xet bridge behind /resolve/, signed CDN URLs) answer
+ * 403/405 to HEAD, and a HEAD can also die on a redirect hop.  HEAD
+ * first; on transport failure or a 403/405/501 answer, retry with a
+ * 1-byte ranged GET (HTTP_MODE_META), which still yields the status,
+ * the headers and Content-Range/Last-Modified. */
+int
+http_probe (const char *url, struct http_response *out)
+{
+    int err = http_head (url, out);
+    if (err == 0 && out->status != 403 && out->status != 405
+        && out->status != 501)
+        return err;
+    struct http_response alt;
+    int e2 = http_get_impl (HTTP_MODE_META, url, 0, 0, &alt);
+    if (e2 == 0 && alt.status >= 200 && alt.status < 400)
+      {
+        http_response_release (out);
+        *out = alt;
+        return 0;
+      }
+    http_response_release (&alt);
+    return err != 0 ? err : EIO;
 }
 
 int http_fetch (const char *url, struct http_response *out)
