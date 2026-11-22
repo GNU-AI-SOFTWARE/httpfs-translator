@@ -3,6 +3,7 @@
 
 /* blocks.c -- ranged block cache of httpfs (fetch/read/release). */
 
+#ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
@@ -39,7 +40,7 @@
  * failures are recorded in meta_err; HTTP statuses, whatever they
  * are, are information, not errors.
  */
-static int ensure_metadata (struct netnode *nn)
+int ensure_metadata (struct netnode *nn)
 {
     int err;
 
@@ -223,7 +224,7 @@ static int fetch_block (struct netnode *nn, uint64_t idx,
  *       >=400 -> RES_FULLBODY with the error page as the body;
  *       transport error -> RES_ERROR (sticky).
  */
-static int ensure_content (struct netnode *nn)
+int ensure_content (struct netnode *nn)
 {
     int err;
 

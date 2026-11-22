@@ -39,6 +39,8 @@ bool reserved_name (const char *name, enum httpfs_kind *kind);
 
 /* blocks.c */
 long long resource_size (struct netnode *nn);
+int ensure_metadata (struct netnode *nn);
+int ensure_content (struct netnode *nn);
 int read_blocks (struct netnode *nn, uint64_t offset, size_t *len, char *buf);
 void release_resource (struct netnode *nn);
 

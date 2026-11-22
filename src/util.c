@@ -3,6 +3,7 @@
 
 /* util.c -- inode derivation and reserved-name helpers of httpfs. */
 
+#ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 

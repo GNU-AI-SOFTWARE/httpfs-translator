@@ -3,6 +3,7 @@
 
 /* cache.c -- node tree and MRU cache of httpfs. */
 
+#ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
