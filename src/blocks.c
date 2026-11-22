@@ -48,7 +48,7 @@ int ensure_metadata (struct netnode *nn)
 
     if (! nn->meta_done)
     {
-        err = http_head (nn->url, &nn->probe);
+        err = http_probe (nn->url, &nn->probe);
         nn->meta_err = err;
         nn->meta_done = true;
         if (err == 0)

@@ -72,6 +72,11 @@ struct http_response
  */
 int http_head (const char *url, struct http_response *out);
 
+/* http_probe — like http_head, but on transport failure or a
+ * 403/405/501 answer retries with a capped 1-byte ranged GET (signed
+ * CDN URLs behind huggingface.co /resolve/ refuse HEAD). */
+int http_probe (const char *url, struct http_response *out);
+
 /*
  * http_fetch — download a whole resource with a single GET.
  *
