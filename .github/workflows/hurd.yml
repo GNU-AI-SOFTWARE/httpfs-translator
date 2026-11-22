@@ -35,6 +35,9 @@ jobs:
         with:
           path: httpfs-translator
 
+      - name: Version check
+        run: sh httpfs-translator/scripts/check-version.sh
+
       - name: Install QEMU and the VM tools
         run: |
           sudo apt-get update -q
