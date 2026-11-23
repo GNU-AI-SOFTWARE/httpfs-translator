@@ -16,6 +16,15 @@ AC_PROG_CC
 AM_PROG_AR
 AC_PROG_RANLIB
 
+# The translators are netfs servers (-lnetfs, Mach headers): build them
+# only on GNU/Hurd.  Everywhere else the tree still builds and tests
+# its portable parts (parsers, URL layer).
+case "$host_os" in
+  gnu*|mach*) hurd_system=yes ;;
+  *)          hurd_system=no ;;
+esac
+AM_CONDITIONAL([ON_HURD], [test "x$hurd_system" = xyes])
+
 # Le projet est écrit en C23 ; certains compilateurs nomment encore ce
 # mode « c2x ».  Exiger l'un des deux.
 AC_CACHE_CHECK([whether the C compiler accepts C23], [httpfs_cv_c23], [

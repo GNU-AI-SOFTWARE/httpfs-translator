@@ -1,6 +1,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # SPDX-FileCopyrightText: 2026 Claire Ivanenka <claire@gnu-ai.org>
 
+# The five translators are netfs servers: they link -lnetfs and the
+# Mach headers, so they are built only on GNU/Hurd (ON_HURD, set by
+# configure.ac).  On any other host the tree builds only its test
+# suite (the parsers and the URL layer are pure C23/POSIX + libcurl).
+if ON_HURD
 bin_PROGRAMS = httpfs htmlfs jsonfs csvfs tsvfs
 
 # --- Phase 1-2: the transport translator -----------------------------
@@ -51,3 +56,4 @@ htmlfs_LDADD = $(PARSERFS_LDADD)
 jsonfs_LDADD = $(PARSERFS_LDADD)
 csvfs_LDADD = $(PARSERFS_LDADD)
 tsvfs_LDADD = $(PARSERFS_LDADD)
+endif
