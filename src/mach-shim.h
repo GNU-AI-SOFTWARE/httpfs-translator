@@ -22,7 +22,15 @@
 #ifndef HTTPFS_MACH_SHIM_H
 #define HTTPFS_MACH_SHIM_H
 
+#ifdef __GNU__
 #include <mach/port.h>                  /* mach_port_t */
 typedef mach_port_t *processor_name_array_t;
+#else
+/* Non-Hurd host: the shim is only included by Hurd-facing translation
+   units (the netfs servers, built only under ON_HURD); provide the
+   types so the header stays includable anywhere. */
+typedef unsigned int mach_port_t;
+typedef mach_port_t *processor_name_array_t;
+#endif
 
 #endif /* HTTPFS_MACH_SHIM_H */
