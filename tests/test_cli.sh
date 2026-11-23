@@ -18,6 +18,23 @@ FAIL=0
 say() { printf '%s\n' "$*"; }
 fail() { say "test_cli: FAIL: $*"; FAIL=1; }
 
+if [ "$(uname -s)" != "GNU" ] && [ ! -x "$BUILDDIR/httpfs" ]; then
+    # Outside GNU/Hurd the netfs translators are not built by design
+    # (ON_HURD in configure.ac): assert that gating worked instead of
+    # skipping -- the parser tests (test_json/test_html/...) still
+    # exercise the portable code on this host.
+    for prog in httpfs htmlfs jsonfs csvfs tsvfs; do
+        if [ -e "$BUILDDIR/$prog" ]; then
+            fail "$prog must NOT be built outside GNU/Hurd (ON_HURD gating)"
+        fi
+    done
+    if [ "$FAIL" = 0 ]; then
+        say "test_cli: OK (non-Hurd host: netfs translators correctly not built)"
+        exit 0
+    fi
+    exit 1
+fi
+
 for prog in httpfs htmlfs jsonfs csvfs tsvfs; do
     BINARY="$BUILDDIR/$prog"
     if [ ! -x "$BINARY" ]; then
