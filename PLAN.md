@@ -31,6 +31,11 @@
 - [ ] Range cache with coherence (ETag/Last-Modified revalidation), bounded memory.
 - [ ] Acceptance: concurrent readers on 2+ nodes get byte-identical content (SHA-256), no cursor cross-talk between readers, no regression in the Phase 2 raw-transport suite.
 
+## Phase 6: LLM Context Acquisition (Feeding the LLM)
+- [ ] Fetched documents become the **context** of LLM prompts: the orchestrator (its phase 3) mounts `httpfs` on each URL of `/inference/request`, reads the raw bytes (or a parsed view via `htmlfs`/`jsonfs` stacked on top), and injects the excerpts as `params.context`, grounded in `/db/training_data`.
+- [ ] Non-200 responses follow the documented retry/skip/abandon policy and never block the LLM answer (`grounded: "empty"` instead of a silent failure).
+- [ ] Acceptance: in the Hurd VM, a prompt containing a URL yields an `/orchestrate/result` whose `sources` cite the fetched `source_url` with a checksum verifiable via `/db/training_data/<id>`; byte-identical fetches (SHA-256) across concurrent readers, per Phase 5.
+
 ## Design Notes
 
 - **Cluster from phase 3**: as of orchestrator phase 3, the stack runs on multi-node Hurd clusters. `httpfs` itself needs no new contract — a translator mounted on the orchestrator node serves fetches for the remote instances too. The design rule is that neither the transport nor the parser chain may assume a single-node topology: one seek/Range cursor per open file per reader, no shared mutable state without locking.
